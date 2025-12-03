@@ -102,4 +102,3 @@ All dependencies are listed in `pyproject.toml`:
 - `httpx` - HTTP client for weather API
 - `sympy` - Symbolic math for calculator
 - `transformers`, `torch`, `datasets` - For model distillation
-
