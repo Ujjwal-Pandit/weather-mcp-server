@@ -191,23 +191,51 @@ def train_kd(student, teacher, dataloader, optimizer, scheduler, tokenizer):
       - CE (hard) + KL (soft) losses
       - optimizer/scheduler steps
     """
-    # TODO (1 pt): correct train/eval modes for teacher and
+    teacher.eval()
+    student.train()
 
     total_loss = 0.0
 
     for batch in tqdm(dataloader, desc="Distillation"):
-        # TODO (2 pts): move only tensor fields to device; keep others (e.g., example_id) as-is
+        batch = {
+            k: v.to(cfg.device) if isinstance(v, torch.Tensor) else v
+            for k, v in batch.items()
+        }
 
-        # TODO (1 pt): drop fields not accepted by forward (e.g., example_id)
+        model_inputs = {k: v for k, v in batch.items() if k != "example_id"}
 
-        # TODO (2 pts): teacher forward with no grad
- 
+        with torch.no_grad():
+            teacher_outputs = teacher(**model_inputs)
 
-        # TODO (1 pt): student forward
+        student_outputs = student(**model_inputs)
 
-        # TODO (3 pts): losses = CE + KL(start/end) with provided kl_loss()
+        ce_loss_start = F.cross_entropy(
+            student_outputs.start_logits, 
+            batch["start_positions"]
+        )
+        ce_loss_end = F.cross_entropy(
+            student_outputs.end_logits, 
+            batch["end_positions"]
+        )
 
-        # TODO (1 pt): optimize (backward, step, scheduler, zero_grad) and accumulate
+        kl_loss_start = kl_loss(
+            student_outputs.start_logits,
+            teacher_outputs.start_logits
+        )
+        kl_loss_end = kl_loss(
+            student_outputs.end_logits,
+            teacher_outputs.end_logits
+        )
+
+        loss_start = cfg.beta_ce * ce_loss_start + cfg.alpha_kd * kl_loss_start
+        loss_end = cfg.beta_ce * ce_loss_end + cfg.alpha_kd * kl_loss_end
+        loss = loss_start + loss_end
+
+        loss.backward()
+        optimizer.step()
+        scheduler.step()
+        optimizer.zero_grad()
+        total_loss += loss.item()
 
     return total_loss / len(dataloader)
 

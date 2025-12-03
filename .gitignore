@@ -29,6 +29,11 @@ Thumbs.db
 *.log
 checkpoints_kd_squad/
 
+# HuggingFace cache (models are downloaded automatically)
+.cache/
+*.cache
+C:\Users\*\.cache\
+
 # Claude Desktop config (contains local paths)
 claude_desktop_config.json
 

@@ -295,3 +295,202 @@ The choice between formal MCP implementation and agent orchestration depends on 
 
 However, for a one-off internal script or a highly specialized tool that only works with one specific client, direct orchestration might be simpler and faster. The key is evaluating whether the benefits of standardization and ecosystem access justify the initial setup overhead.
 
+---
+
+# Task 4 Deliverables - Model Distillation
+
+## Deliverable 1: Complete train_kd Function ✅
+**Status**: Completed - `train_kd` function implemented in `bert_dist.py`
+
+The function implements knowledge distillation training with:
+- Teacher model in eval mode with no gradients
+- Student model in train mode
+- Proper device handling for tensors only
+- Combined loss: Cross-Entropy (hard labels) + KL Divergence (soft teacher logits)
+- Both start and end logits used for both CE and KL losses
+
+---
+
+## Deliverable 2: Evaluation Results (4 pts)
+**Status**: Pending - Need to run `bert_dist.py` and capture screenshots
+
+After running the script, you should see:
+- Training loss for standard fine-tuning
+- Training loss for knowledge distillation
+- Evaluation metrics (F1, Exact Match) for both models
+- Comparison showing distilled model performance
+
+**To run:**
+```powershell
+$env:Path = "C:\Users\ujjwa\.local\bin;$env:Path"
+uv run python bert_dist.py
+```
+
+---
+
+## Deliverable 3: Loss Function Explanation (2 pts)
+
+The `train_kd` function uses a combined loss that integrates both hard labels and soft teacher logits:
+
+**Loss Components:**
+
+1. **Cross-Entropy Loss (Hard Labels)**:
+   - Uses the ground truth start and end positions from the dataset
+   - Measures how well the student predicts the correct answer span
+   - Formula: `CE = -log(P(student_prediction | ground_truth))`
+   - Applied separately to start and end logits: `CE_start + CE_end`
+
+2. **KL Divergence Loss (Soft Teacher Logits)**:
+   - Uses probability distributions from the teacher model's predictions
+   - Captures the teacher's confidence and decision boundaries
+   - Uses temperature scaling (T=2.0) to soften the distributions
+   - Formula: `KL = T² * KL(student_softmax(logits/T) || teacher_softmax(logits/T))`
+   - Applied separately to start and end logits: `KL_start + KL_end`
+
+**Combined Loss:**
+```python
+loss = beta_ce * CE_loss + alpha_kd * KL_loss
+```
+
+Where:
+- `beta_ce = 0.5` (weight for hard label supervision)
+- `alpha_kd = 0.5` (weight for teacher knowledge transfer)
+
+**Why This Combination Works:**
+
+- **Hard labels (CE)**: Ensure the student learns the correct answers directly
+- **Soft logits (KL)**: Transfer the teacher's nuanced understanding, including:
+  - Confidence levels across all possible answer positions
+  - Relative probabilities of alternative answers
+  - Decision boundaries and uncertainty patterns
+
+The temperature scaling (T=2.0) makes the teacher's distribution "softer" (more spread out), which helps the student learn not just the correct answer, but also the relative likelihood of other positions. This richer information helps the student generalize better than learning from hard labels alone.
+
+---
+
+## Deliverable 4: Benefits of Model Distillation (3 pts)
+
+Model distillation offers several key advantages over standard fine-tuning:
+
+### 1. **Model Compression and Efficiency**
+- **Smaller model size**: Student models (BERT-base) are significantly smaller than teacher models (BERT-large), reducing memory footprint
+- **Faster inference**: Smaller models run faster, enabling real-time applications
+- **Lower computational cost**: Reduced FLOPs for deployment, especially important for edge devices and mobile applications
+
+### 2. **Performance Retention**
+- **Maintains accuracy**: Student models often achieve 90-95% of teacher performance despite being much smaller
+- **Knowledge transfer**: Soft targets preserve teacher's confidence patterns and decision boundaries
+- **Better than direct training**: Often outperforms models trained only on hard labels
+
+### 3. **Improved Generalization**
+- **Rich supervision**: Soft targets provide more information than hard labels alone
+- **Uncertainty awareness**: Student learns which predictions the teacher was confident vs uncertain about
+- **Regularization effect**: Soft targets act as a form of regularization, reducing overfitting
+
+### 4. **Practical Deployment Advantages**
+- **Resource constraints**: Enables deployment in environments with limited compute/memory
+- **Cost efficiency**: Lower inference costs in production (important for high-volume applications)
+- **Scalability**: Can serve more requests with the same hardware infrastructure
+
+### 5. **Knowledge Preservation**
+- **Teacher expertise**: Captures nuanced patterns the teacher learned during training
+- **Multi-task transfer**: Can distill knowledge from teachers trained on multiple tasks
+- **Domain adaptation**: Helps transfer knowledge across domains when teacher is domain-specific
+
+**Trade-offs:**
+- **Training complexity**: Requires training teacher first, then distillation step
+- **Slight accuracy loss**: Usually 2-5% performance drop compared to teacher
+- **Hyperparameter tuning**: Need to tune temperature, alpha, beta weights
+
+---
+
+## Task 4.2: Agent Distillation (9 pts)
+
+### 1. Teacher Agent Workflow (3 pts)
+
+The teacher agent follows a **reason-act-observe** pattern:
+
+**Reasoning Phase:**
+- Analyzes the user's query or task
+- Determines what information or actions are needed
+- Plans a sequence of tool calls to accomplish the goal
+
+**Action Phase:**
+- **Tool Selection**: Chooses appropriate tools based on the task (e.g., retrieval for information needs, code execution for computational tasks, web search for current information)
+- **Tool Execution**: Calls selected tools with appropriate parameters
+- **Sequential Operations**: May chain multiple tool calls, where outputs from one tool inform the next
+
+**Observation Phase:**
+- Receives outputs from tool calls
+- Interprets and processes the results
+- Uses observations to refine reasoning and decide next actions
+- Continues the cycle until the task is complete
+
+**Example Workflow:**
+1. User asks: "What's the weather in NYC and should I bring an umbrella?"
+2. **Reason**: Need weather data → use weather tool
+3. **Act**: Call `get_forecast(latitude, longitude)` for NYC
+4. **Observe**: Receive forecast showing rain probability
+5. **Reason**: High rain probability → recommend umbrella
+6. **Act**: Generate response incorporating tool output
+
+This multi-step, tool-using approach allows the teacher to handle complex tasks that require external information or computation.
+
+### 2. Distilled Student Learning (3 pts)
+
+The distilled student learns to imitate the **reason-act-observe** pattern without explicitly calling external tools:
+
+**Internalization Process:**
+- **Training Data**: Student is trained on teacher's complete reasoning traces, including:
+  - Internal reasoning steps (what the teacher "thought")
+  - Tool selection decisions (which tools to use)
+  - Tool outputs (what the tools returned)
+  - Final responses (how teacher synthesized everything)
+
+**Pattern Learning:**
+- Student learns to generate responses that **appear** to use tools, but actually internalize the tool's functionality
+- Instead of calling a retrieval tool, student generates responses that incorporate retrieved-like information
+- Instead of calling a calculator, student performs calculations internally
+- The student's output mimics what the teacher would produce after tool use
+
+**Key Insight:**
+The student doesn't just learn the final answers, but learns the **reasoning process** that led to those answers. This includes:
+- When to "retrieve" information (even if it's from internal knowledge)
+- How to "calculate" (using learned mathematical patterns)
+- How to synthesize multiple pieces of information
+
+**Result:**
+The student can produce similar quality outputs as the teacher, but:
+- **Faster**: No tool call latency
+- **More consistent**: No external API failures
+- **Self-contained**: Works offline, no external dependencies
+
+### 3. Technique Explanation: First-Thought Prefix (3 pts)
+
+**What it is:**
+The **first-thought prefix** is a technique where the student model is trained to generate an initial reasoning step (the "first thought") before producing the final answer. This prefix captures the teacher's initial reasoning that led to tool selection.
+
+**Why it matters:**
+- **Reasoning transparency**: Makes the student's reasoning process explicit, similar to the teacher's tool selection reasoning
+- **Better tool imitation**: Helps the student learn *when* and *why* the teacher would use tools, not just *what* tools were used
+- **Improved generalization**: By learning the reasoning pattern, the student can apply it to new situations even when specific tools aren't available
+
+**How it helps:**
+1. **Pattern Recognition**: Student learns to recognize situations that would trigger tool use in the teacher
+2. **Reasoning Transfer**: The prefix encodes the teacher's decision-making process
+3. **Better Imitation**: Student generates responses that follow the same reasoning structure as teacher's tool-using behavior
+4. **Generalization**: Student can adapt the reasoning pattern to new contexts, even without the exact same tools
+
+**Example:**
+- **Teacher**: "I need current weather data → [calls weather tool] → Based on forecast..."
+- **Student**: "[Reasoning: Need current weather information] → Based on typical weather patterns for this location and time of year..."
+
+The first-thought prefix helps bridge the gap between explicit tool use and internalized knowledge, making the student's behavior more similar to the teacher's reasoning process.
+
+---
+
+## Notes
+- Run `bert_dist.py` to get evaluation results for Deliverable 2
+- Screenshot the training and evaluation output
+- Compare F1 and Exact Match scores between standard fine-tuning and distillation
+
