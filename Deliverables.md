@@ -1,3 +1,325 @@
+# Task 1 Deliverables - Weather MCP Server Setup
+
+## Deliverable 1: Screenshot of Working Weather Server (12 pts)
+**Status**: Pending - Need to capture screenshot from Claude Desktop
+
+**Instructions:**
+- Test the weather server using Claude Desktop
+- Ask Claude for weather alerts and forecasts for your home town (or first US city you landed in)
+- Capture screenshot showing:
+  - Natural language query to Claude
+  - Tool calls (get_alerts and/or get_forecast)
+  - Formatted weather results returned by the server
+
+**To test:**
+1. Ensure weather server is configured in Claude Desktop
+2. Restart Claude Desktop completely
+3. Ask: "What are the weather alerts in [STATE]?" (e.g., "What are the weather alerts in California?")
+4. Ask: "What's the weather forecast for [CITY]?" (e.g., "What's the weather forecast for New York City?")
+5. Take screenshots showing the tool calls and results
+
+---
+
+## Deliverable 2: Designing Your Own Tool (4 pts)
+
+If you were to create your own tool (e.g., for stock prices, translations, or movie info), here are the steps you would need to follow:
+
+### Step 1: Define Tool Purpose and Scope
+- **Identify the use case**: What problem does the tool solve? (e.g., stock price lookup, language translation, movie information retrieval)
+- **Determine data source**: Where will the data come from? (API, database, web scraping, etc.)
+- **Define scope**: What specific information will the tool provide?
+
+### Step 2: Design Input Parameters
+- **Identify required inputs**: What information is needed to fulfill the request?
+  - Example for stock prices: `symbol` (stock ticker), `date` (optional)
+  - Example for translations: `text` (to translate), `source_language`, `target_language`
+  - Example for movie info: `title` or `movie_id`
+- **Validate input types**: Ensure parameters match expected types (string, number, etc.)
+- **Handle optional parameters**: Decide which inputs are required vs optional
+
+### Step 3: Data Fetching and Processing
+- **API Integration**: 
+  - Choose appropriate API (e.g., Alpha Vantage for stocks, Google Translate API, TMDB for movies)
+  - Set up authentication (API keys, OAuth tokens)
+  - Make HTTP requests with proper error handling
+- **Data Processing**:
+  - Parse JSON/XML responses
+  - Extract relevant fields
+  - Handle rate limiting and retries
+  - Cache responses if appropriate
+
+### Step 4: Output Format Design
+- **Human-readable format** (for AI clients like Claude):
+  - Format data into clear, natural language strings
+  - Include all relevant information in a structured way
+  - Use formatting (newlines, separators) for readability
+- **Error messages**: Provide clear, helpful error messages when data can't be fetched
+
+### Example: Stock Price Tool Design
+
+**Inputs:**
+- `symbol` (str, required): Stock ticker symbol (e.g., "AAPL", "MSFT")
+- `date` (str, optional): Date in YYYY-MM-DD format (defaults to today)
+
+**Data Fetching:**
+```python
+async def get_stock_price(symbol: str, date: str | None = None) -> str:
+    # 1. Validate symbol format
+    # 2. Construct API URL with symbol and optional date
+    # 3. Make HTTP request to stock API (e.g., Alpha Vantage)
+    # 4. Parse JSON response
+    # 5. Extract price, volume, change, etc.
+    # 6. Format into human-readable string
+```
+
+**Output Format:**
+```
+Stock: AAPL (Apple Inc.)
+Date: 2024-01-15
+Price: $150.25
+Change: +$2.50 (+1.69%)
+Volume: 45,234,567
+```
+
+---
+
+## Deliverable 3: Error Handling Importance (4 pts)
+
+### Why Error Handling is Critical for AI-Connected Tools
+
+Error handling is essential for tools connected to AI clients for several key reasons:
+
+#### 1. **Prevents AI Confusion and Hallucination**
+- Without proper error handling, the AI might receive malformed data or exceptions
+- This can cause the AI to generate incorrect or misleading responses
+- Clear error messages help the AI understand what went wrong and communicate it to users appropriately
+
+#### 2. **Maintains User Trust**
+- Users expect reliable tools that gracefully handle failures
+- Transparent error messages (like "Unable to fetch...") inform users of issues without crashing
+- The AI can explain the error to users in natural language, maintaining a smooth user experience
+
+#### 3. **Enables Graceful Degradation**
+- Tools can provide partial results or fallback information when primary data sources fail
+- The AI can work with whatever information is available rather than failing completely
+- Example: If forecast API fails, the tool might return cached data or a simplified response
+
+#### 4. **Prevents Server Crashes**
+- Unhandled exceptions can crash the MCP server, breaking all tool functionality
+- Proper error handling ensures the server remains stable and can handle subsequent requests
+- The AI client can continue using other tools even if one fails
+
+#### 5. **Facilitates Debugging**
+- Clear error messages help developers identify issues quickly
+- The AI can log errors appropriately for troubleshooting
+- Users can report specific error messages to developers
+
+### Types of Errors to Handle in Your Own Tool
+
+When building your own tool, you should expect and handle these error categories:
+
+#### 1. **Network Errors**
+- **Connection timeouts**: API server is slow or unreachable
+- **Network failures**: No internet connection, DNS resolution failures
+- **HTTP errors**: 404 (not found), 500 (server error), 503 (service unavailable)
+- **Handling**: Retry with exponential backoff, return "Unable to fetch data" message
+
+#### 2. **API-Specific Errors**
+- **Invalid API keys**: Authentication failures, expired tokens
+- **Rate limiting**: Too many requests, quota exceeded
+- **Invalid parameters**: API rejects malformed requests
+- **Handling**: Validate inputs before API calls, check rate limit headers, provide specific error messages
+
+#### 3. **Data Parsing Errors**
+- **Malformed JSON/XML**: API returns invalid data format
+- **Missing fields**: Expected data fields are absent
+- **Type mismatches**: Data types don't match expectations
+- **Handling**: Use try-except blocks around parsing, validate data structure before accessing fields
+
+#### 4. **Input Validation Errors**
+- **Invalid parameter values**: Out of range, wrong format, missing required fields
+- **Type errors**: String instead of number, etc.
+- **Handling**: Validate all inputs at function entry, return clear error messages before making API calls
+
+#### 5. **Business Logic Errors**
+- **No data available**: Valid request but no results (e.g., no stock data for weekend)
+- **Invalid combinations**: Conflicting parameters
+- **Handling**: Return informative messages like "No data available for this date" rather than errors
+
+#### 6. **Resource Errors**
+- **Memory issues**: Large responses causing memory problems
+- **File system errors**: If tool writes to disk
+- **Handling**: Limit response sizes, handle file operations gracefully
+
+### Error Handling Pattern
+
+```python
+async def my_tool(param1: str, param2: int) -> str:
+    try:
+        # Validate inputs
+        if not param1 or param2 < 0:
+            return "Error: Invalid parameters provided."
+        
+        # Make API call
+        response = await fetch_data(param1, param2)
+        
+        if not response:
+            return "Unable to fetch data. Please try again later."
+        
+        # Process and return
+        return format_result(response)
+        
+    except httpx.TimeoutException:
+        return "Request timed out. The service may be slow or unavailable."
+    except httpx.HTTPStatusError as e:
+        return f"API error: {e.response.status_code}. Unable to fetch data."
+    except Exception as e:
+        return f"An unexpected error occurred: {str(e)}"
+```
+
+This pattern ensures:
+- Users always get a response (never crashes)
+- Error messages are informative and actionable
+- The AI can understand and communicate errors to users
+- The server remains stable for other requests
+
+---
+
+## Deliverable 4: Program-Consumable Output Format (4 pts)
+
+If your tool needed to return results that another program (not a human) would consume, you would change the output design significantly:
+
+### Key Changes from Human-Readable Format
+
+#### 1. **Structured Data Instead of Strings**
+- Return structured formats (JSON, XML, Protocol Buffers) instead of formatted text
+- Use consistent schemas that programs can parse reliably
+- Include metadata (timestamps, data types, units) in the structure
+
+#### 2. **Machine-Parseable Format**
+- Use standard formats (JSON is most common for APIs)
+- Avoid natural language descriptions
+- Use consistent field names and types
+- Include type information explicitly
+
+#### 3. **Complete Data, Not Summaries**
+- Include all available data, not just a human-friendly summary
+- Preserve precision (don't round numbers unnecessarily)
+- Include raw values alongside formatted ones
+- Provide both primary and secondary data fields
+
+#### 4. **Error Codes and Status Fields**
+- Use structured error responses with error codes
+- Include status fields (success, partial_success, error)
+- Provide error details in a parseable format
+- Include retry information if applicable
+
+### Example: Weather Forecast Tool - Program-Consumable Format
+
+**Human-Readable Format (Current):**
+```
+Tonight:
+Temperature: 45°F
+Wind: 10 mph NW
+Forecast: Clear skies with light winds.
+```
+
+**Program-Consumable Format:**
+```json
+{
+  "status": "success",
+  "timestamp": "2024-01-15T18:30:00Z",
+  "location": {
+    "latitude": 40.7128,
+    "longitude": -74.0060,
+    "grid_id": "OKX",
+    "grid_x": 33,
+    "grid_y": 37
+  },
+  "forecast_periods": [
+    {
+      "number": 1,
+      "name": "Tonight",
+      "start_time": "2024-01-15T19:00:00-05:00",
+      "end_time": "2024-01-16T06:00:00-05:00",
+      "is_daytime": false,
+      "temperature": {
+        "value": 45,
+        "unit": "F",
+        "type": "integer"
+      },
+      "temperature_unit": "F",
+      "wind_speed": {
+        "value": 10,
+        "unit": "mph",
+        "type": "string"
+      },
+      "wind_direction": "NW",
+      "detailed_forecast": "Clear skies with light winds.",
+      "short_forecast": "Clear",
+      "icon": "https://api.weather.gov/icons/land/night/skc?size=medium"
+    }
+  ],
+  "metadata": {
+    "units": "us",
+    "forecast_generated_at": "2024-01-15T18:00:00Z",
+    "valid_for": "2024-01-15T19:00:00-05:00"
+  }
+}
+```
+
+### Benefits of Program-Consumable Format
+
+1. **Automation**: Other programs can automatically process and integrate the data
+2. **Precision**: No information loss from formatting
+3. **Type Safety**: Programs can validate data types and structures
+4. **Extensibility**: Easy to add new fields without breaking existing consumers
+5. **Integration**: Can be directly used in databases, analytics tools, dashboards
+6. **Error Handling**: Structured error responses allow programs to handle failures programmatically
+
+### Implementation Example
+
+```python
+@mcp.tool()
+async def get_forecast_json(latitude: float, longitude: float) -> dict:
+    """Get weather forecast in JSON format for program consumption."""
+    # ... fetch data ...
+    
+    if not forecast_data:
+        return {
+            "status": "error",
+            "error_code": "FETCH_FAILED",
+            "message": "Unable to fetch forecast data",
+            "timestamp": datetime.now().isoformat()
+        }
+    
+    return {
+        "status": "success",
+        "location": {"latitude": latitude, "longitude": longitude},
+        "periods": [
+            {
+                "name": period["name"],
+                "temperature": period["temperature"],
+                "temperature_unit": period["temperatureUnit"],
+                "wind_speed": period["windSpeed"],
+                "wind_direction": period["windDirection"],
+                "forecast": period["detailedForecast"]
+            }
+            for period in periods
+        ],
+        "timestamp": datetime.now().isoformat()
+    }
+```
+
+This format allows:
+- Database storage without parsing
+- Direct use in web APIs
+- Integration with data analysis tools
+- Automated processing pipelines
+- Type checking and validation
+
+---
+
 # Task 2 Deliverables - Written Responses
 
 ## Deliverable 1: Completed calc.py ✅
