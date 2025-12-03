@@ -1,22 +1,16 @@
 # Task 1 Deliverables - Weather MCP Server Setup
 
 ## Deliverable 1: Screenshot of Working Weather Server (12 pts)
-**Status**: Pending - Need to capture screenshot from Claude Desktop
+**Status**: ✅ Completed - Screenshots captured from Claude Desktop
 
-**Instructions:**
-- Test the weather server using Claude Desktop
-- Ask Claude for weather alerts and forecasts for your home town (or first US city you landed in)
-- Capture screenshot showing:
-  - Natural language query to Claude
-  - Tool calls (get_alerts and/or get_forecast)
-  - Formatted weather results returned by the server
+**Screenshots:**
+- `screenshots/weather_alert_KY.png` - Weather alerts for Kentucky (home state)
+- Additional weather server screenshots showing tool calls and formatted results
 
-**To test:**
-1. Ensure weather server is configured in Claude Desktop
-2. Restart Claude Desktop completely
-3. Ask: "What are the weather alerts in [STATE]?" (e.g., "What are the weather alerts in California?")
-4. Ask: "What's the weather forecast for [CITY]?" (e.g., "What's the weather forecast for New York City?")
-5. Take screenshots showing the tool calls and results
+**What the screenshots show:**
+- Natural language query to Claude (e.g., "What are the weather alerts in Kentucky?")
+- Tool calls (get_alerts and/or get_forecast) executed by Claude
+- Formatted weather results returned by the server in human-readable format
 
 ---
 
@@ -329,7 +323,14 @@ This format allows:
 - `solve_equation` - Equation solving over ℝ or ℂ
 - `stats_expectation_variance` - Statistical distributions (Uniform, Normal, Bernoulli)
 
-Screenshot taken showing natural language input → calculator tool call → results.
+**Screenshots:**
+- `screenshots/differentiate_poly_expression.png` - Differentiation example
+- `screenshots/integrate_expre.png` - Integration example
+- `screenshots/solve_equation.png` - Equation solving example
+- `screenshots/expectation_variance_bernoulli.png` - Statistical distributions example
+- `screenshots/added_calculator_weather.png` - Calculator and weather servers in Claude Desktop
+
+All screenshots show natural language input → calculator tool call → results.
 
 ---
 
@@ -636,6 +637,9 @@ The function implements knowledge distillation training with:
 ## Deliverable 2: Evaluation Results (4 pts)
 **Status**: ✅ Completed - Screenshot captured from Turing cluster run
 
+**Screenshot:**
+- `screenshots/screenshot_bert_dist.png` - Training and evaluation results from `bert_dist.py` run
+
 **Results from Training Run (on Turing GPU cluster):**
 
 **Standard Fine-tuning:**
@@ -864,6 +868,10 @@ The first-thought prefix helps bridge the gap between explicit tool use and inte
 2. The agent demonstrated **robustness** by falling back to internalized knowledge when external tools failed
 3. The multi-step reasoning shows the agent internalized the teacher's **sequential problem-solving approach**
 4. The agent's behavior is **consistent** with what a teacher agent would do, but runs entirely locally without external API dependencies
+
+**Screenshots:**
+- `screenshots/screenshot_quick_start_1.png` - Agent distillation interaction (part 1)
+- `screenshots/screenshot_quick_start_2.png` - Agent distillation interaction (part 2)
 
 **Screenshot Location:** Terminal output from `python examples/quick_start.py` run on Turing cluster (lines 965-1049)
 
