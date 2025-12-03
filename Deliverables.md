@@ -137,3 +137,161 @@ This ensures that:
 
 The tool computes both expectation E[X] and variance Var(X) using SymPy's stats module.
 
+---
+
+# Task 3 Deliverables - Exploring MCP Ecosystem
+
+## Deliverable 1: MCP Example Server Analysis (6 pts)
+
+**Selected Server:** Geolocation MCP Server
+
+**Description:**
+
+The Geolocation MCP Server provides location-based services through WalkScore API integration. It enables AI assistants to assess the walkability, transit accessibility, and bikeability of any location. The server solves the problem of location intelligence by providing standardized access to urban planning metrics that help users understand neighborhood characteristics.
+
+The server provides two main tools: `get_transit_stops` for finding nearby public transit stops, and `get_walkscore` for retrieving WalkScore, TransitScore, and BikeScore metrics. These tools work with addresses, coordinates, or both, making it flexible for various use cases. The server integrates with WalkScore's professional API to deliver real-time location data that helps users make informed decisions about where to live, work, or visit based on transportation and walkability factors.
+
+**How it differs from calculator/weather servers:**
+
+**Architecture & Purpose:**
+- Calculator/Weather servers: Simple, focused tools (math operations, weather data)
+- Geolocation server: Location intelligence and urban planning metrics (walkability, transit, bikeability)
+
+**Data Sources:**
+- Calculator: Local computation (SymPy - no external calls, pure mathematical operations)
+- Weather: External API (NWS - read-only weather data fetching)
+- Geolocation server: External API (WalkScore API - read-only location intelligence data)
+
+**Tool Complexity:**
+- Calculator/Weather: Simple, stateless tool calls (input → output, single-purpose queries)
+- Geolocation server: Similar complexity to weather (simple API calls), but focuses on location metrics rather than weather conditions
+
+**Use Cases:**
+- Calculator: Mathematical computations and symbolic math
+- Weather: Weather alerts and forecasts for planning
+- Geolocation: Urban planning decisions, real estate evaluation, transportation planning, neighborhood assessment
+
+**MCP Features Used:**
+- Calculator/Weather: Primarily tools (simple function calls with clear inputs/outputs)
+- Geolocation server: Tools only (similar pattern - API integration with structured responses), demonstrates how MCP can standardize access to location-based services
+
+---
+
+## Deliverable 2: Claude Connectors Exploration (6 pts)
+
+**Available Connectors Explored:**
+- **Filesystem** - Anthropic's built-in connector for local filesystem access
+- (Note: "Add connectors" is now a pro feature, but Filesystem is available as a built-in extension)
+
+**Combination Opportunities:**
+
+**1. Filesystem + Weather Server:**
+- **Use case**: Store weather data locally, create weather reports, log historical weather queries
+- **How they complement**: Weather server fetches real-time data, Filesystem can save it for later analysis or create formatted reports
+- **Example scenario**: 
+  - User asks: "Get weather for New York and save it to a file"
+  - Weather server fetches forecast → Filesystem writes formatted report to `weather_report_nyc.txt`
+  - Later: "Read last week's weather reports and compare" → Filesystem reads saved files → Weather server provides context
+
+**2. Filesystem + Calculator Server:**
+- **Use case**: Save calculation results, read mathematical expressions from files, batch process calculations
+- **How they complement**: Calculator performs computations, Filesystem manages input/output files
+- **Example scenario**:
+  - User: "Read equations from equations.txt and solve them all"
+  - Filesystem reads file → Calculator solves each equation → Filesystem writes results to solutions.txt
+  - Enables batch processing and persistence of mathematical work
+
+**3. Filesystem + Geolocation Server:**
+- **Use case**: Store location data, create location reports, analyze multiple locations from a file
+- **How they complement**: Geolocation provides location metrics, Filesystem enables batch processing and data persistence
+- **Example scenario**:
+  - User: "Read addresses from addresses.txt and get walkability scores for each"
+  - Filesystem reads addresses → Geolocation server gets scores for each → Filesystem writes comprehensive report
+  - Creates a location analysis workflow with data persistence
+
+**Workflow Example: Comprehensive Weather & Location Analysis**
+
+A complete workflow combining multiple connectors and servers:
+
+1. **User request**: "Analyze walkability and weather for these 5 addresses and create a report"
+
+2. **Filesystem** reads addresses from `locations.txt`
+
+3. **Geolocation server** gets WalkScore, TransitScore, BikeScore for each address
+
+4. **Weather server** gets current weather and forecast for each location
+
+5. **Calculator server** computes average scores, weather trends, or other metrics
+
+6. **Filesystem** writes comprehensive report combining all data:
+   - Location addresses
+   - Walkability scores
+   - Current weather conditions
+   - Calculated averages/comparisons
+   - Formatted as markdown or JSON
+
+This demonstrates how MCP servers and connectors can work together to create powerful, multi-step workflows that combine data from different sources and persist results.
+
+---
+
+## Deliverable 3: MCP Implementation Trade-offs (3 pts)
+
+**Formally Implementing MCP:**
+
+**Advantages:**
+- **Standardization**: MCP provides a standardized protocol that ensures consistent interfaces across different tools and servers, making integration predictable and maintainable
+- **Interoperability**: MCP servers can work with any MCP-compatible client (Claude Desktop, Cursor, custom clients), not just one specific application
+- **Ecosystem integration**: Access to a growing ecosystem of connectors, servers, and tools that can be combined and reused
+- **Future-proofing**: Protocol evolution is managed centrally, ensuring compatibility as the ecosystem grows
+- **Developer experience**: Well-documented SDKs, clear patterns, and community support reduce development time
+
+**Disadvantages:**
+- **Overhead**: Protocol complexity adds initial setup time and learning curve
+- **Learning curve**: Need to understand MCP specification, transport layers (stdio, SSE, HTTP), and best practices
+- **Maintenance**: Must keep up with protocol changes and updates to maintain compatibility
+- **May be overkill**: For simple, single-use tools, the protocol overhead might not be justified
+
+**Focusing Only on Agent Orchestration:**
+
+**Advantages:**
+- **Simplicity**: Direct API calls or custom protocols eliminate protocol overhead
+- **Flexibility**: Full control over communication format, error handling, and features
+- **Faster development**: No need to learn MCP spec or use SDKs - can build exactly what's needed
+- **Direct control**: Complete control over the communication layer without protocol constraints
+
+**Disadvantages:**
+- **Lack of standardization**: Each implementation is different, making it harder to integrate with other tools
+- **Limited interoperability**: Tightly coupled to specific client or framework, can't easily switch clients
+- **No ecosystem access**: Can't leverage existing connectors, servers, or tools from the MCP ecosystem
+- **Maintenance burden**: Must maintain custom communication code, handle edge cases, and ensure reliability
+- **Reinventing the wheel**: Building features (authentication, error handling, tool discovery) that MCP already provides
+
+**When to Use Each Approach:**
+
+**Formal MCP Implementation:**
+- Building reusable tools/services that others might use
+- Need to work with multiple AI clients (Claude Desktop, Cursor, custom)
+- Want ecosystem integration (connectors, other servers)
+- Long-term projects where standardization matters
+- Team collaboration where consistency is important
+- When you want your tool to be discoverable and usable by others
+
+**Agent Orchestration Only:**
+- Quick prototypes or proofs of concept
+- Single-use, internal tools with no external users
+- Highly specialized requirements that don't fit MCP patterns
+- Tight coupling with a specific client is acceptable
+- Short-term projects where speed matters more than standardization
+- When protocol overhead outweighs benefits
+
+**Conclusion:**
+
+The choice between formal MCP implementation and agent orchestration depends on the project's scope, longevity, and integration needs. For our weather and calculator servers, MCP was the right choice because:
+
+1. **Reusability**: These servers can be used by anyone with Claude Desktop
+2. **Ecosystem**: Can combine with Filesystem connector and other servers
+3. **Standardization**: Follows established patterns that make the code maintainable
+4. **Future-proofing**: As MCP evolves, our servers remain compatible
+
+However, for a one-off internal script or a highly specialized tool that only works with one specific client, direct orchestration might be simpler and faster. The key is evaluating whether the benefits of standardization and ecosystem access justify the initial setup overhead.
+
