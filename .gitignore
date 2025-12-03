@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+*.log
+checkpoints_kd_squad/
+
+# Claude Desktop config (contains local paths)
+claude_desktop_config.json
+
+# Test files
+test_*.py
+
+# Lock files (optional - some prefer to commit, some don't)
+# uv.lock
